@@ -19,7 +19,7 @@ namespace GSProApiPlugin
         // OnConnectionError
 
         protected Action<GSResponse> OnResponseInvoker = resp => { };
-        protected Action<bool> OnConnectionStateInvoker = resp => { };
+        protected Action<GSProStatus> OnConnectionStateInvoker = resp => { };
 
 
         private CancellationTokenSource _ct;
@@ -46,7 +46,7 @@ namespace GSProApiPlugin
         /// <summary>
         /// 
         /// </summary>
-        public event Action<bool> OnConnectionState
+        public event Action<GSProStatus> OnConnectionState
         {
             add => this.OnConnectionStateInvoker += value;
             remove => this.OnConnectionStateInvoker -= value;
@@ -160,8 +160,9 @@ namespace GSProApiPlugin
             _ct = new CancellationTokenSource();
 
             // Start Socket
-            IPHostEntry ipHost = Dns.GetHostEntry(_hostName);
-            IPAddress ipAddr = ipHost.AddressList[0];
+            //IPHostEntry ipHost = Dns.GetHostEntry(_hostName);
+            //IPAddress ipAddr = ipHost.AddressList[0];
+            var ipAddr = IPAddress.Parse(_hostName);
             IPEndPoint endPoint = new IPEndPoint(ipAddr, _port);
 
             // 
@@ -176,8 +177,11 @@ namespace GSProApiPlugin
                 var t = new Task(ReadData);
                 t.Start();
 
-
-                OnConnectionStateInvoker(true);
+                OnConnectionStateInvoker(new GSProStatus()
+                {
+                    IsConnected = true,
+                    Message = "Connected to " + _hostName + ":" + _port
+                });
             }
             catch (Exception ex)
             {
@@ -185,6 +189,12 @@ namespace GSProApiPlugin
                 _socket = null;
 
                 // TODO: Publish Error
+                OnConnectionStateInvoker(new GSProStatus()
+                {
+                    IsConnected = false,
+                    Message = "Failed to connect to " + _hostName + ":" + _port + ", Reason :" + ex.Message
+                });
+
                 return false;
             }
 
@@ -197,25 +207,31 @@ namespace GSProApiPlugin
         /// 
         /// </summary>
         public void Disconnect()
-        {           
+        {
             // Kill Thread
-            if (_socket != null)
+            try
             {
-                if (_socket.Connected)
+                if (_socket != null)
                 {
-                    _socket.Disconnect(false);
+                    if (_socket.Connected)
+                    {
+                        _socket.Disconnect(false);
+                    }
+
+                    _socket.Dispose();
+                    _socket = null;
                 }
 
-                _socket.Dispose();
-                _socket = null;
+                _ct.Cancel();
+                _ct.Dispose();
+                _ct = null;
+            }
+            catch (Exception ex)
+            {
+
             }
 
-            _ct.Cancel();
-            _ct.Dispose();
-            _ct = null;
-
-
-            OnConnectionStateInvoker(false);
+            OnConnectionStateInvoker(new GSProStatus() { IsConnected = false, Message = "Disconnected" });
         }
 
     }
