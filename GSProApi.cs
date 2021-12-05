@@ -31,7 +31,7 @@ namespace GSProApiPlugin
         /// </summary>
         public GSProApi()
         {
-            _ct = new CancellationTokenSource();
+            
         }
 
         /// <summary>
@@ -222,9 +222,12 @@ namespace GSProApiPlugin
                     _socket = null;
                 }
 
-                _ct.Cancel();
-                _ct.Dispose();
-                _ct = null;
+                if (_ct != null)
+                {
+                    _ct.Cancel();
+                    _ct.Dispose();
+                    _ct = null;
+                }
             }
             catch (Exception ex)
             {
