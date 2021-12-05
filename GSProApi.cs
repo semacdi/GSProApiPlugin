@@ -73,6 +73,11 @@ namespace GSProApiPlugin
             }
             catch(Exception ex)
             {
+                OnConnectionStateInvoker(new GSProStatus()
+                {
+                    IsConnected = true,
+                    Message = "Unable to SendShot: " + ex.Message
+                });
                 // Send Again?
                 // Reconnect?
                 // Alert UI?
@@ -123,6 +128,11 @@ namespace GSProApiPlugin
                                 }
                                 catch(Exception ex)
                                 {
+                                    OnConnectionStateInvoker(new GSProStatus()
+                                    {
+                                        IsConnected = true,
+                                        Message = "Client Error: " + ex.Message
+                                    });
                                     // Ignore client errors
                                 }
                             }
@@ -142,8 +152,12 @@ namespace GSProApiPlugin
                     // What happened?
                     // Try to Reconnect?
                     // Alert clients?
-
                     Disconnect();
+                    OnConnectionStateInvoker(new GSProStatus()
+                    {
+                        IsConnected = true,
+                        Message = "Socket Error: " + ex.Message
+                    });                    
                 }
 
             }
