@@ -25,6 +25,7 @@ namespace GSProApiPlugin
         private CancellationTokenSource _ct;
 
         private Socket _socket;
+        
 
         /// <summary>
         /// 
@@ -58,6 +59,12 @@ namespace GSProApiPlugin
         /// <param name="shot"></param>
         public void SendShot(GSShot shot)
         {
+            if (_socket == null)
+            {
+                OnConnectionStateInvoker(new GSProStatus() { IsConnected = false, Message= "No connection, shot not sent" });
+                return;
+
+            }
             var json = JsonSerializer.Serialize(shot);
 
             var bytes = Encoding.ASCII.GetBytes(json);
