@@ -67,6 +67,15 @@ namespace GSProApiPlugin
             }
             var json = JsonSerializer.Serialize(shot);
 
+            SendJson(json);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="json"></param>
+        private void SendJson(string json)
+        {
             var bytes = Encoding.ASCII.GetBytes(json);
 
             try
@@ -78,18 +87,43 @@ namespace GSProApiPlugin
                     totalSent += bytesSent;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 OnConnectionStateInvoker(new GSProStatus()
                 {
                     IsConnected = true,
-                    Message = "Unable to SendShot: " + ex.Message
+                    Message = "Unable to Send: " + ex.Message
                 });
                 // Send Again?
                 // Reconnect?
                 // Alert UI?
             }
+        }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void SendHeartbeat()
+        {
+            if (_socket == null)
+            {
+                OnConnectionStateInvoker(new GSProStatus() { IsConnected = false, Message = "No connection, heartbeat not sent" });
+                return;
+
+            }
+            var json = JsonSerializer.Serialize(new GSShot()
+            {
+                ShotDataOptions = new GSShotOptions()
+                {
+                    ContainsBallData = false,
+                    ContainsClubData = false,
+                    IsHeartBeat = true,
+                    LaunchMonitorIsReady = true
+                }
+            });
+
+            SendJson(json);
         }
 
         /// <summary>
@@ -150,25 +184,29 @@ namespace GSProApiPlugin
                         else if (startCount > endCount)
                         {
                             // Keep reading
+                            OnConnectionStateInvoker(new GSProStatus()
+                            {
+                                IsConnected = true,
+                                Message = "Partial msg? " + line
+                            });
                         }
                     }
                 }
                 catch(Exception ex)
                 {
                     System.Threading.Thread.Sleep(5 * 1000);
-                    // What happened?
-                    // Try to Reconnect?
-                    // Alert clients?
-                    Disconnect();
                     OnConnectionStateInvoker(new GSProStatus()
                     {
                         IsConnected = true,
                         Message = "Socket Error: " + ex.Message
-                    });                    
+                    });
+
+                    // What happened?
+                    // Try to Reconnect?
+                    // Alert clients?
+                    Disconnect();                                     
                 }
-
             }
-
         }
 
         /// <summary>
@@ -252,7 +290,7 @@ namespace GSProApiPlugin
             }
             catch (Exception ex)
             {
-
+                
             }
 
             OnConnectionStateInvoker(new GSProStatus() { IsConnected = false, Message = "Disconnected" });
