@@ -159,22 +159,37 @@ namespace GSProApiPlugin
                         if (startCount == endCount)
                         {
                             // Single Command
-                            var cmd = JsonSerializer.Deserialize<GSResponse>(line);
-                            var callback = OnResponseInvoker;
-                            if (callback != null)
+                            GSResponse cmd = null;
+                            try
                             {
-                                try
+                                cmd = JsonSerializer.Deserialize<GSResponse>(line);
+                            }
+                            catch(Exception exJson)
+                            {
+                                OnConnectionStateInvoker(new GSProStatus()
                                 {
-                                    callback(cmd);
-                                }
-                                catch(Exception ex)
+                                    IsConnected = true,
+                                    Message = "Bad Json: " + line
+                                });
+                            }
+                            if (cmd != null)
+                            {
+                                var callback = OnResponseInvoker;
+                                if (callback != null)
                                 {
-                                    OnConnectionStateInvoker(new GSProStatus()
+                                    try
                                     {
-                                        IsConnected = true,
-                                        Message = "Client Error: " + ex.Message
-                                    });
-                                    // Ignore client errors
+                                        callback(cmd);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        OnConnectionStateInvoker(new GSProStatus()
+                                        {
+                                            IsConnected = true,
+                                            Message = "Client Error: " + ex.Message
+                                        });
+                                        // Ignore client errors
+                                    }
                                 }
                             }
 
